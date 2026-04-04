@@ -16,6 +16,8 @@ from uuid import uuid4
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
+from incident_response_env.models import IncidentResponseState
+
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
 except ImportError:
@@ -52,19 +54,27 @@ class IncidentResponseEnvironment(Environment):
 
     def reset(self) -> IncidentResponseObservation:
         """
-        Reset the environment.
-
-        Returns:
-            IncidentResponseObservation with a ready message
+        Reset the environment and start a new incident.
         """
-        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self._state = IncidentResponseState(
+            episode_id=str(uuid4()), 
+            step_count=0,
+            incident_type="service_outage",
+            root_cause="api_process_crashed",
+            service_status="down",
+            resolved=False,
+            )
         self._reset_count += 1
 
         return IncidentResponseObservation(
-            echoed_message="Incident Response Env environment ready!",
-            message_length=0,
-            done=False,
-            reward=0.0,
+            alert="API Service is down",
+            metrics={
+                "cpu": 5.0,
+                "memory": 15.0,
+                "error_rate": 1.0
+            },
+            logs="API Process terminated unexpectedly",
+            status="down",
         )
 
     def step(self, action: IncidentResponseAction) -> IncidentResponseObservation:  # type: ignore[override]
@@ -72,7 +82,7 @@ class IncidentResponseEnvironment(Environment):
         Execute a step in the environment by echoing the message.
 
         Args:
-            action: IncidentResponseAction containing the message to echo
+            action: IncidentResponseAction containing the actions
 
         Returns:
             IncidentResponseObservation with the echoed message and its length
