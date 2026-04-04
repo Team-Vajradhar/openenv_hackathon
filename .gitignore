@@ -1,0 +1,8 @@
+# Virtual env
+.virtual-env/
+
+# IDE
+.vscode/
+
+# Secrets
+.env
