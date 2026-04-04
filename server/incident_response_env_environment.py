@@ -16,7 +16,7 @@ from uuid import uuid4
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
-from incident_response_env.models import IncidentResponseState
+from incident_response_env.models import IncidentActionType, IncidentResponseState
 
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
@@ -79,29 +79,50 @@ class IncidentResponseEnvironment(Environment):
 
     def step(self, action: IncidentResponseAction) -> IncidentResponseObservation:  # type: ignore[override]
         """
-        Execute a step in the environment by echoing the message.
-
-        Args:
-            action: IncidentResponseAction containing the actions
-
-        Returns:
-            IncidentResponseObservation with the echoed message and its length
+        Execute an action in the environment.
         """
         self._state.step_count += 1
-
-        message = action.message
-        length = len(message)
-
-        # Simple reward: longer messages get higher rewards
-        reward = length * 0.1
-
-        return IncidentResponseObservation(
-            echoed_message=message,
-            message_length=length,
-            done=False,
-            reward=reward,
-            metadata={"original_message": message, "step": self._state.step_count},
+        reward = 0.0
+        done = False
+        
+        #process action + determine reward
+        if action.action_type == IncidentActionType.inspect_logs:
+            reward = 0.1
+        elif action.action_type == IncidentActionType.restart_service:
+            if self._state.root_cause == "api_process_crashed":
+                self._state.service_status = "healthy"
+                self._state.resolved = True
+                reward = 1.0
+                done = True
+            else:
+                reward = -0.2
+        elif action.action_type == IncidentActionType.resolve_incident:
+            if self._state.resolved:
+                reward = 0.5
+                done = True
+            else:
+                reward = -0.5
+        
+        observation = IncidentResponseObservation(
+            alert="API Service incident",
+            metrics={
+            "cpu": 10.0,
+            "memory": 20.0,
+            "error_rate": 0.0 if self._state.resolved else 1.0
+            },
+            logs="Service logs inspected",
+            status=self._state.service_status,
         )
+        
+        return observation, done, reward, {}
+
+        # return IncidentResponseObservation(
+        #     echoed_message=message,
+        #     message_length=length,
+        #     done=False,
+        #     reward=reward,
+        #     metadata={"original_message": message, "step": self._state.step_count},
+        # )
 
     @property
     def state(self) -> State:
