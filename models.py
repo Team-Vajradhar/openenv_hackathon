@@ -42,6 +42,8 @@ class IncidentResponseObservation(Observation):
     metrics: Dict[str, float] = Field(description="System metrics like CPU, memory, error rate")
     logs: str = Field(description="Relevant log snippet")
     status: str = Field(description="Current service status: healthy, degraded, down")
+    reward: float = Field(description="Reward assigned for the previous action")
+    done: bool = Field(description="Whether the episode has finished")
     
 
 class IncidentResponseState(State):
@@ -52,5 +54,7 @@ class IncidentResponseState(State):
     root_cause: str = Field(description="Underlying cause of the incident, e.g., 'Misconfiguration', 'Vulnerability Exploitation', 'Hardware Failure'")
     service_status: str = Field(default="degraded",description="Current status of the affected service, e.g., 'healthy', 'degraded', 'down'")
     resolved: bool = Field(default=False, description="Whether the incident has been resolved")
+    logs_checked: bool = Field(default=False, description="Whether logs have been inspected")
+    metrics_checked: bool = Field(default=False, description="Whether metrics have been checked")
     # step_count: int = Field(default=0, description="Number of actions taken in the episode")
     

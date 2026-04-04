@@ -63,6 +63,8 @@ class IncidentResponseEnvironment(Environment):
             root_cause="api_process_crashed",
             service_status="down",
             resolved=False,
+            logs_checked=False,
+            metrics_checked=False,
             )
         self._reset_count += 1
 
@@ -75,6 +77,8 @@ class IncidentResponseEnvironment(Environment):
             },
             logs="API Process terminated unexpectedly",
             status="down",
+            reward=0.0,
+            done=False,
         )
 
     def step(self, action: IncidentResponseAction) -> IncidentResponseObservation:  # type: ignore[override]
@@ -84,10 +88,18 @@ class IncidentResponseEnvironment(Environment):
         self._state.step_count += 1
         reward = 0.0
         done = False
+        logs_output = "Logs not inspected yet"
         
         #process action + determine reward
         if action.action_type == IncidentActionType.inspect_logs:
             reward = 0.1
+            self._state.logs_checked = True
+            logs_output = "API process terminated unexpectedly"
+            
+        elif action.action_type == IncidentActionType.inspect_metrics:
+            reward = 0.1
+            self._state.metrics_checked = True
+            
         elif action.action_type == IncidentActionType.restart_service:
             if self._state.root_cause == "api_process_crashed":
                 self._state.service_status = "healthy"
@@ -102,19 +114,31 @@ class IncidentResponseEnvironment(Environment):
                 done = True
             else:
                 reward = -0.5
+        else:
+            reward = -0.1
+            
+        logs_output = ("API process terminated unexpectedly" if self._state.logs_checked else "Logs not inspected yet")
+        
+        metrics_output = ({
+            "cpu": 5.0,
+            "memory": 15.0,
+            "error_rate": 1.0
+        } if self._state.metrics_checked else {
+            "cpu": -1,
+            "memory": -1,
+            "error_rate": -1
+        })
         
         observation = IncidentResponseObservation(
             alert="API Service incident",
-            metrics={
-            "cpu": 10.0,
-            "memory": 20.0,
-            "error_rate": 0.0 if self._state.resolved else 1.0
-            },
-            logs="Service logs inspected",
+            metrics=metrics_output,
+            logs=logs_output,
             status=self._state.service_status,
+            reward=reward,
+            done=done,
         )
         
-        return observation, done, reward, {}
+        return observation
 
         # return IncidentResponseObservation(
         #     echoed_message=message,
