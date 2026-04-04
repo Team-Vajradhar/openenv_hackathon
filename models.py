@@ -42,6 +42,8 @@ class IncidentResponseObservation(Observation):
     metrics: Dict[str, float] = Field(description="System metrics like CPU, memory, error rate")
     logs: str = Field(description="Relevant log snippet")
     status: str = Field(description="Current service status: healthy, degraded, down")
+    reward: float = Field(description="Reward assigned for the previous action")
+    done: bool = Field(description="Whether the episode has finished")
     
 
 class IncidentResponseState(State):

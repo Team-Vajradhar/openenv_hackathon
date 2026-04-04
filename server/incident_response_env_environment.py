@@ -75,6 +75,8 @@ class IncidentResponseEnvironment(Environment):
             },
             logs="API Process terminated unexpectedly",
             status="down",
+            reward=0.0,
+            done=False,
         )
 
     def step(self, action: IncidentResponseAction) -> IncidentResponseObservation:  # type: ignore[override]
@@ -84,10 +86,13 @@ class IncidentResponseEnvironment(Environment):
         self._state.step_count += 1
         reward = 0.0
         done = False
+        logs_output = "Logs not inspected yet"
         
         #process action + determine reward
         if action.action_type == IncidentActionType.inspect_logs:
             reward = 0.1
+            logs_output = "API process terminated unexpectedly"
+            
         elif action.action_type == IncidentActionType.restart_service:
             if self._state.root_cause == "api_process_crashed":
                 self._state.service_status = "healthy"
@@ -102,6 +107,8 @@ class IncidentResponseEnvironment(Environment):
                 done = True
             else:
                 reward = -0.5
+        else:
+            reward = -0.1
         
         observation = IncidentResponseObservation(
             alert="API Service incident",
@@ -110,11 +117,13 @@ class IncidentResponseEnvironment(Environment):
             "memory": 20.0,
             "error_rate": 0.0 if self._state.resolved else 1.0
             },
-            logs="Service logs inspected",
+            logs="Logs not inspected yet",
             status=self._state.service_status,
+            reward=reward,
+            done=done,
         )
         
-        return observation, done, reward, {}
+        return observation
 
         # return IncidentResponseObservation(
         #     echoed_message=message,
