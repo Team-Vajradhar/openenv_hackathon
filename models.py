@@ -6,21 +6,29 @@
 
 """
 Data models for the Incident Response Env Environment.
-
-The incident_response_env environment is a simple test environment that echoes back messages.
 """
 
+from enum import Enum
 from typing import Dict,Optional
 
-from openenv.core.env_server.types import Action, BaseModel, Observation
+from openenv.core.env_server.types import Action, BaseModel, Observation, State
 from pydantic import Field
 
-
+class IncidentActionType(str, Enum):
+    """Allowed actions in the Incident Response environment."""
+    
+    inspect_logs="inspect_logs"
+    inspect_metrics="inspect_metrics"
+    restart_service="restart_service"
+    scale_service="scale_service"
+    rollback_deployment="rollback_deployment"
+    resolve_incident="resolve_incident"
+    
 class IncidentResponseAction(Action):
     """Action for the Incident Response Env environment"""
 
     # message: str = Field(..., description="Message to echo back")
-    action_type: str = Field(..., description="Type of action to perform, e.g., 'investigate', 'mitigate', 'escalate'")
+    action_type: IncidentActionType = Field(...,description="Action to perform: inspect_logs, inspect_metrics, restart_service, scale_service, rollback_deployment, resolve_incident")
     target_service: Optional[str] = Field(default=None, description="The service or component to target with the action")
     
 
@@ -36,12 +44,13 @@ class IncidentResponseObservation(Observation):
     status: str = Field(description="Current service status: healthy, degraded, down")
     
 
-class IncidentResponseState(BaseModel):
+class IncidentResponseState(State):
     """Internal State of Environment, not visible to the agent"""
 
+    # episode_id: str = Field(...,description="Stores the unique Id of the current episode")
     incident_type: str = Field(description="Type of incident, e.g., 'DDoS', 'Data Breach', 'Service Outage' occuring in the system")
     root_cause: str = Field(description="Underlying cause of the incident, e.g., 'Misconfiguration', 'Vulnerability Exploitation', 'Hardware Failure'")
     service_status: str = Field(default="degraded",description="Current status of the affected service, e.g., 'healthy', 'degraded', 'down'")
     resolved: bool = Field(default=False, description="Whether the incident has been resolved")
-    step_count: int = Field(default=0, description="Number of actions taken in the episode")
+    # step_count: int = Field(default=0, description="Number of actions taken in the episode")
     
