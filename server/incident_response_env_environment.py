@@ -27,6 +27,7 @@ try:
 except ImportError:
     from models import IncidentResponseAction, IncidentResponseObservation
 
+MAX_STEPS = 10
 
 class IncidentResponseEnvironment(Environment):
     """
@@ -53,7 +54,7 @@ class IncidentResponseEnvironment(Environment):
 
     def __init__(self):
         """Initialize the incident_response_env environment."""
-        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self._state: IncidentResponseState | None = None
         self._reset_count = 0
         self._scenario: IncidentScenario | None = None
         self._task = None
@@ -85,9 +86,9 @@ class IncidentResponseEnvironment(Environment):
         return IncidentResponseObservation(
             alert=scenario.alert,
             metrics={
-                "cpu": -1,
-                "memory": -1,
-                "error_rate": -1
+                "cpu": -1.0,
+                "memory": -1.0,
+                "error_rate": -1.0
             },
             logs="Logs not inspected yet",
             status=self._state.service_status,
@@ -99,14 +100,17 @@ class IncidentResponseEnvironment(Environment):
         """
         Execute an action in the environment.
         """
-        assert self._scenario is not None
+        assert self._scenario is not None, "Environment must be reset before calling step()"
+        assert self._state is not None, "Environment must be reset before calling step()"
         self._state.step_count += 1
         reward = 0.0
         done = False
-        logs_output = "Logs not inspected yet"
         
-        #process action + determine reward
-        if action.action_type == IncidentActionType.inspect_logs:
+        if self._state.step_count >= MAX_STEPS:
+            done = True
+            reward = -0.2
+            
+        elif action.action_type == IncidentActionType.inspect_logs:
             reward = 0.1
             self._state.logs_checked = True
             
@@ -118,8 +122,7 @@ class IncidentResponseEnvironment(Environment):
             if self._state.root_cause == "api_process_crashed":
                 self._state.service_status = "healthy"
                 self._state.resolved = True
-                reward = 1.0
-                done = True
+                reward = 0.5
             else:
                 reward = -0.2
         elif action.action_type == IncidentActionType.resolve_incident:
@@ -134,9 +137,9 @@ class IncidentResponseEnvironment(Environment):
         logs_output = (self._scenario.logs if self._state.logs_checked else "Logs not inspected yet")
         
         metrics_output = (self._scenario.metrics if self._state.metrics_checked else {
-            "cpu": -1,
-            "memory": -1,
-            "error_rate": -1
+            "cpu": -1.0,
+            "memory": -1.0,
+            "error_rate": -1.0
         })
         
         observation = IncidentResponseObservation(
