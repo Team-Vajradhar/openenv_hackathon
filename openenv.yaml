@@ -5,3 +5,23 @@ runtime: fastapi
 app: server.app:app
 port: 8000
 
+entrypoint: incident_response_env.server.incident_response_env_environment:IncidentResponseEnvironment
+
+tasks:
+  - name: easy_api_crash
+    description: API process crashed unexpectedly.
+    difficulty: easy
+
+  - name: medium_memory_leak
+    description: Memory leak causing service degradation.
+    difficulty: medium
+
+  - name: hard_traffic_spike
+    description: Sudden traffic spike overwhelming service.
+    difficulty: hard
+
+action_space:
+  type: IncidentResponseAction
+
+observation_space:
+  type: IncidentResponseObservation
