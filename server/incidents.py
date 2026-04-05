@@ -9,7 +9,7 @@ class IncidentScenario:
     logs: str
     metrics: dict
 
-INCIDENT_SCNEARIOS = {
+INCIDENT_SCENARIOS = {
     "easy_api_crash": IncidentScenario(
         incident_type="service_outage",
         root_cause="api_process_crashed",
