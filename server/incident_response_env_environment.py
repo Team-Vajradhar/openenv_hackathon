@@ -11,12 +11,14 @@ A simple test environment that echoes back messages sent to it.
 Perfect for testing HTTP server infrastructure.
 """
 
+from random import random
 from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
 from incident_response_env.models import IncidentActionType, IncidentResponseState
+from incident_response_env.server.incidents import INCIDENT_SCNEARIOS, IncidentScenario
 
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
@@ -51,17 +53,21 @@ class IncidentResponseEnvironment(Environment):
         """Initialize the incident_response_env environment."""
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._reset_count = 0
+        self._scenario: IncidentScenario | None = None
 
     def reset(self) -> IncidentResponseObservation:
         """
         Reset the environment and start a new incident.
         """
+        scenario = random.choice(list(INCIDENT_SCNEARIOS.values()))
+        
+        self._scenario = scenario
         self._state = IncidentResponseState(
             episode_id=str(uuid4()), 
             step_count=0,
-            incident_type="service_outage",
-            root_cause="api_process_crashed",
-            service_status="down",
+            incident_type=scenario.incident_type,
+            root_cause=scenario.root_cause,
+            service_status=scenario.initial_status,
             resolved=False,
             logs_checked=False,
             metrics_checked=False,
@@ -69,14 +75,10 @@ class IncidentResponseEnvironment(Environment):
         self._reset_count += 1
 
         return IncidentResponseObservation(
-            alert="API Service is down",
-            metrics={
-                "cpu": 5.0,
-                "memory": 15.0,
-                "error_rate": 1.0
-            },
-            logs="API Process terminated unexpectedly",
-            status="down",
+            alert=scenario.alert,
+            metrics=scenario.metrics,
+            logs="Logs not inspected yet",
+            status=self._state.service_status,
             reward=0.0,
             done=False,
         )
@@ -94,7 +96,7 @@ class IncidentResponseEnvironment(Environment):
         if action.action_type == IncidentActionType.inspect_logs:
             reward = 0.1
             self._state.logs_checked = True
-            logs_output = "API process terminated unexpectedly"
+            logs_output = self._scenario.logs if self._state.logs_checked else "Logs not inspected yet"
             
         elif action.action_type == IncidentActionType.inspect_metrics:
             reward = 0.1
@@ -119,11 +121,7 @@ class IncidentResponseEnvironment(Environment):
             
         logs_output = ("API process terminated unexpectedly" if self._state.logs_checked else "Logs not inspected yet")
         
-        metrics_output = ({
-            "cpu": 5.0,
-            "memory": 15.0,
-            "error_rate": 1.0
-        } if self._state.metrics_checked else {
+        metrics_output = (self._scenario.metrics if self._state.metrics_checked else {
             "cpu": -1,
             "memory": -1,
             "error_rate": -1
