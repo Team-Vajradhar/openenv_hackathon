@@ -20,6 +20,7 @@ from openenv.core.env_server.types import State
 from incident_response_env.models import IncidentActionType, IncidentResponseState
 from incident_response_env.server.graders import grade_incident
 from incident_response_env.server.incidents import INCIDENT_SCENARIOS, IncidentScenario
+from incident_response_env.server.tasks import TASKS
 
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
@@ -55,13 +56,19 @@ class IncidentResponseEnvironment(Environment):
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._reset_count = 0
         self._scenario: IncidentScenario | None = None
+        self._task = None
 
-    def reset(self) -> IncidentResponseObservation:
+    def reset(self, task_name: str | None = None) -> IncidentResponseObservation:
         """
         Reset the environment and start a new incident.
         """
-        scenario = random.choice(list(INCIDENT_SCENARIOS.values()))
+        if task_name is None:
+            task = random.choice(list(TASKS.values()))
+        else:
+            task = TASKS[task_name]
+        scenario = INCIDENT_SCENARIOS[task.scenario_key]
         
+        self._task = task        
         self._scenario = scenario
         self._state = IncidentResponseState(
             episode_id=str(uuid4()), 
