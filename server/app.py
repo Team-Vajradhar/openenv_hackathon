@@ -35,12 +35,15 @@ except Exception as e:  # pragma: no cover
         "openenv is required for the web interface. Install dependencies with '\n    uv sync\n'"
     ) from e
 
-try:
-    from ..models import IncidentResponseAction, IncidentResponseObservation
-    from .incident_response_env_environment import IncidentResponseEnvironment
-except ModuleNotFoundError:
-    from models import IncidentResponseAction, IncidentResponseObservation
-    from server.incident_response_env_environment import IncidentResponseEnvironment
+
+from incident_response_env.models import IncidentResponseAction, IncidentResponseObservation
+from incident_response_env.server.incident_response_env_environment import IncidentResponseEnvironment
+# try:
+#     from ..models import IncidentResponseAction, IncidentResponseObservation
+#     from .incident_response_env_environment import IncidentResponseEnvironment
+# except ModuleNotFoundError:
+#     from models import IncidentResponseAction, IncidentResponseObservation
+#     from server.incident_response_env_environment import IncidentResponseEnvironment
 
 
 # Create the app with web interface and README integration
