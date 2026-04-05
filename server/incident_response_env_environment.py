@@ -11,14 +11,14 @@ A simple test environment that echoes back messages sent to it.
 Perfect for testing HTTP server infrastructure.
 """
 
-from random import random
+import random
 from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
 from incident_response_env.models import IncidentActionType, IncidentResponseState
-from incident_response_env.server.incidents import INCIDENT_SCNEARIOS, IncidentScenario
+from incident_response_env.server.incidents import INCIDENT_SCENARIOS, IncidentScenario
 
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
@@ -59,7 +59,7 @@ class IncidentResponseEnvironment(Environment):
         """
         Reset the environment and start a new incident.
         """
-        scenario = random.choice(list(INCIDENT_SCNEARIOS.values()))
+        scenario = random.choice(list(INCIDENT_SCENARIOS.values()))
         
         self._scenario = scenario
         self._state = IncidentResponseState(
@@ -76,7 +76,11 @@ class IncidentResponseEnvironment(Environment):
 
         return IncidentResponseObservation(
             alert=scenario.alert,
-            metrics=scenario.metrics,
+            metrics={
+                "cpu": -1,
+                "memory": -1,
+                "error_rate": -1
+            },
             logs="Logs not inspected yet",
             status=self._state.service_status,
             reward=0.0,
@@ -87,6 +91,7 @@ class IncidentResponseEnvironment(Environment):
         """
         Execute an action in the environment.
         """
+        assert self._scenario is not None
         self._state.step_count += 1
         reward = 0.0
         done = False
@@ -96,7 +101,6 @@ class IncidentResponseEnvironment(Environment):
         if action.action_type == IncidentActionType.inspect_logs:
             reward = 0.1
             self._state.logs_checked = True
-            logs_output = self._scenario.logs if self._state.logs_checked else "Logs not inspected yet"
             
         elif action.action_type == IncidentActionType.inspect_metrics:
             reward = 0.1
@@ -119,7 +123,7 @@ class IncidentResponseEnvironment(Environment):
         else:
             reward = -0.1
             
-        logs_output = ("API process terminated unexpectedly" if self._state.logs_checked else "Logs not inspected yet")
+        logs_output = (self._scenario.logs if self._state.logs_checked else "Logs not inspected yet")
         
         metrics_output = (self._scenario.metrics if self._state.metrics_checked else {
             "cpu": -1,
@@ -128,7 +132,7 @@ class IncidentResponseEnvironment(Environment):
         })
         
         observation = IncidentResponseObservation(
-            alert="API Service incident",
+            alert=self._scenario.alert,
             metrics=metrics_output,
             logs=logs_output,
             status=self._state.service_status,
