@@ -18,6 +18,7 @@ from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
 from incident_response_env.models import IncidentActionType, IncidentResponseState
+from incident_response_env.server.graders import grade_incident
 from incident_response_env.server.incidents import INCIDENT_SCENARIOS, IncidentScenario
 
 try:
@@ -116,7 +117,7 @@ class IncidentResponseEnvironment(Environment):
                 reward = -0.2
         elif action.action_type == IncidentActionType.resolve_incident:
             if self._state.resolved:
-                reward = 0.5
+                reward = grade_incident(self._state)
                 done = True
             else:
                 reward = -0.5
