@@ -51,8 +51,11 @@ from openai import OpenAI
 
 from incident_response_env.models import IncidentResponseAction
 from incident_response_env.server.incident_response_env_environment import IncidentResponseEnvironment
+from dotenv import load_dotenv
+load_dotenv()
+
 IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME") # If you are using docker image 
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_KEY = os.getenv("HF_TOKEN") # or os.getenv("API_KEY")
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
