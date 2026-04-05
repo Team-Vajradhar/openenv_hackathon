@@ -102,7 +102,6 @@ class IncidentResponseEnvironment(Environment):
         """
         assert self._scenario is not None, "Environment must be reset before calling step()"
         assert self._state is not None, "Environment must be reset before calling step()"
-        self._state.step_count += 1
         reward = 0.0
         done = False
         
@@ -123,6 +122,9 @@ class IncidentResponseEnvironment(Environment):
                 self._state.service_status = "healthy"
                 self._state.resolved = True
                 reward = 0.5
+            elif self._state.root_cause == "memory_leak":
+                self._state.service_status = "degraded"
+                reward = 0.1
             else:
                 reward = -0.2
         elif action.action_type == IncidentActionType.resolve_incident:
@@ -134,6 +136,7 @@ class IncidentResponseEnvironment(Environment):
         else:
             reward = -0.1
             
+        self._state.step_count += 1
         logs_output = (self._scenario.logs if self._state.logs_checked else "Logs not inspected yet")
         
         metrics_output = (self._scenario.metrics if self._state.metrics_checked else {
@@ -143,7 +146,7 @@ class IncidentResponseEnvironment(Environment):
         })
         
         observation = IncidentResponseObservation(
-            alert=self._scenario.alert,
+            alert=("Incident Resolved" if self.self._state.resolved else self._scenario.alert),
             metrics=metrics_output,
             logs=logs_output,
             status=self._state.service_status,

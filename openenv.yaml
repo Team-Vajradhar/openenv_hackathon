@@ -16,8 +16,8 @@ tasks:
     description: Memory leak causing service degradation.
     difficulty: medium
 
-  - name: hard_traffic_spike
-    description: Sudden traffic spike overwhelming service.
+  - name: hard_cascading_failure
+    description: Sudden cascading failure overwhelming service.
     difficulty: hard
 
 action_space:
