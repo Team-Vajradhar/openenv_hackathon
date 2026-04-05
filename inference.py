@@ -52,6 +52,10 @@ from openai import OpenAI
 from incident_response_env.models import IncidentResponseAction
 from incident_response_env.server.incident_response_env_environment import IncidentResponseEnvironment
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
 IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME") # If you are using docker image 
