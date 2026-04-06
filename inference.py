@@ -83,6 +83,7 @@ SYSTEM_PROMPT = textwrap.dedent(
     inspect_logs
     inspect_metrics
     restart_service
+    scale_service
     resolve_incident
 
     Your goal is to investigate the issue and resolve the incident efficiently.

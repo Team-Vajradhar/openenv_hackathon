@@ -36,7 +36,7 @@ INCIDENT_SCENARIOS = {
     ),
     "hard_cascading_failure": IncidentScenario(
         incident_type="cascading_failure",
-        root_cause="database_unavailable",
+        root_cause="traffic_spike",
         initial_status="down",
         alert="Multiple Services Failing",
         logs="Database connection timeout errors",

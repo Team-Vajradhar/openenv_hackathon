@@ -82,13 +82,15 @@ class IncidentResponseEnvironment(Environment):
             metrics_checked=False,
             )
         self._reset_count += 1
+        
 
         return IncidentResponseObservation(
             alert=scenario.alert,
             metrics={
                 "cpu": -1.0,
                 "memory": -1.0,
-                "error_rate": -1.0
+                "error_rate": -1.0,
+                "scale_level": -1
             },
             logs="Logs not inspected yet",
             status=self._state.service_status,
@@ -138,6 +140,29 @@ class IncidentResponseEnvironment(Environment):
                 reward = 0.1
             else:
                 reward = -0.2
+        elif action.action_type == IncidentActionType.scale_service:
+            self._state.scale_level += 1
+            # scaling helps traffic spikes
+            if self._state.root_cause == "traffic_spike":
+
+                if self._state.scale_level >= 2:
+                    self._state.service_status = "healthy"
+                    self._state.resolved = True
+                    reward = 0.5
+                else:
+                    reward = 0.2
+
+            # scaling helps memory pressure temporarily
+            elif self._state.root_cause == "memory_leak":
+                self._state.service_status = "degraded"
+                reward = 0.2
+
+            # scaling useless for crash
+            else:
+                reward = -0.1
+            
+            reward -= 0.05 * (self._state.scale_level - 1)
+            
         elif action.action_type == IncidentActionType.resolve_incident:
             if self._state.resolved:
                 reward = grade_incident(self._state)
@@ -149,11 +174,25 @@ class IncidentResponseEnvironment(Environment):
             
         logs_output = (self._scenario.logs if self._state.logs_checked else "Logs not inspected yet")
         
-        metrics_output = (self._scenario.metrics if self._state.metrics_checked else {
-            "cpu": -1.0,
-            "memory": -1.0,
-            "error_rate": -1.0
-        })
+        if self._state.metrics_checked:
+            cpu = self._scenario.metrics["cpu"] / self._state.scale_level
+            memory = self._scenario.metrics["memory"]
+            error_rate = self._scenario.metrics["error_rate"]
+
+            metrics_output = {
+                "cpu": cpu,
+                "memory": memory,
+                "error_rate": error_rate,
+                "scale_level": self._state.scale_level
+            }
+
+        else:
+            metrics_output = {
+                "cpu": -1.0,
+                "memory": -1.0,
+                "error_rate": -1.0,
+                "scale_level": self._state.scale_level
+            }
         
         observation = IncidentResponseObservation(
             alert=("Incident Resolved" if self._state.resolved else self._scenario.alert),

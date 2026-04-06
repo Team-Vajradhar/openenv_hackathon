@@ -56,5 +56,6 @@ class IncidentResponseState(State):
     resolved: bool = Field(default=False, description="Whether the incident has been resolved")
     logs_checked: bool = Field(default=False, description="Whether logs have been inspected")
     metrics_checked: bool = Field(default=False, description="Whether metrics have been checked")
+    scale_level: int = Field(default=1, description="Number of service replicas")
     # step_count: int = Field(default=0, description="Number of actions taken in the episode")
     
