@@ -74,14 +74,14 @@ def main(host: str = "0.0.0.0", port: int = 8000):
         uvicorn incident_response_env.server.app:app --workers 4
     """
     import uvicorn
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
 
     uvicorn.run(app, host=host, port=port)
 
 
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
-    args = parser.parse_args()
-    main(port=args.port)
+if __name__ == "__main__":    
+    main()
