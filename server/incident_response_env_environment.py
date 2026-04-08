@@ -167,7 +167,9 @@ class IncidentResponseEnvironment(Environment):
         )
 
         return observation
-    
+    def _select_scenario(self):
+        """Randomly select an incident scenario."""
+        return random.choice(list(INCIDENT_SCENARIOS.values()))
     @property
     def state(self) -> State:
         """
