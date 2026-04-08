@@ -24,10 +24,10 @@ TASKS = {
         difficulty="medium",
     ),
 
-    "hard_dependency_failure": IncidentTask(
-        name="hard_dependency_failure",
+    "hard_cascading_failure": IncidentTask(
+        name="hard_cascading_failure",
         description="Resolve cascading service failures caused by a database outage.",
-        scenario_key="hard_dependency_failure",
+        scenario_key="hard_cascading_failure",
         difficulty="hard",
     ),
 }
