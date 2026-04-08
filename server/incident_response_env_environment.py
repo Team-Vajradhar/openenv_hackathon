@@ -60,160 +60,114 @@ class IncidentResponseEnvironment(Environment):
         self._scenario: IncidentScenario | None = None
         self._task = None
 
-    def reset(self, task_name: str | None = None) -> IncidentResponseObservation:
-        """
-        Reset the environment and start a new incident.
-        """
-        if task_name is None:
-            task = random.choice(list(TASKS.values()))
-        else:
-            task = TASKS[task_name]
-        scenario = INCIDENT_SCENARIOS[task.scenario_key]
-        
-        self._task = task        
-        self._scenario = scenario
+    def reset(self) -> IncidentResponseObservation:
+        """Reset the environment and start a new incident."""
+
+        scenario = self._select_scenario()
+
         self._state = IncidentResponseState(
-            episode_id=str(uuid4()), 
-            step_count=0,
+            episode_id=str(uuid4()),
             incident_type=scenario.incident_type,
             root_cause=scenario.root_cause,
             service_status=scenario.initial_status,
             resolved=False,
             logs_checked=False,
             metrics_checked=False,
-            )
-        self._reset_count += 1
-        
+            step_count=0
+        )
 
         return IncidentResponseObservation(
             alert=scenario.alert,
-            metrics={
-                "cpu": -1.0,
-                "memory": -1.0,
-                "error_rate": -1.0,
-                "scale_level": -1
-            },
-            logs="Logs not inspected yet",
+            metrics=scenario.metrics,
+            logs=scenario.logs,
             status=self._state.service_status,
             reward=0.0,
             done=False,
         )
 
-    def step(self, action: IncidentResponseAction) -> IncidentResponseObservation:  # type: ignore[override]
-        """
-        Execute an action in the environment.
-        """
-        assert self._scenario is not None, "Environment must be reset before calling step()"
-        assert self._state is not None, "Environment must be reset before calling step()"
+    def step(self, action: IncidentResponseAction) -> IncidentResponseObservation:
+        """Execute an action in the environment."""
+
+        self._state.step_count += 1
+
         reward = 0.0
         done = False
-        self._state.step_count += 1
-        
+
         if self._state.step_count >= MAX_STEPS:
-            done = True
             reward = -0.2
-            
+            done = True
+
         elif action.action_type == IncidentActionType.inspect_logs:
-            if not self._state.logs_checked:
-                reward = 0.1
-                self._state.logs_checked = True
-            else:
-                reward = -0.05
-            
+            reward = 0.1
+            self._state.logs_checked = True
+
         elif action.action_type == IncidentActionType.inspect_metrics:
-            if not self._state.metrics_checked:
-                reward = 0.1
-                self._state.metrics_checked = True
-            else:
-                reward = -0.05
-            
+            reward = 0.1
+            self._state.metrics_checked = True
+
         elif action.action_type == IncidentActionType.restart_service:
+
             if self._state.root_cause == "api_process_crashed":
                 self._state.service_status = "healthy"
                 self._state.resolved = True
                 reward = 0.5
-            elif (self._state.root_cause == "memory_leak" and self._state.logs_checked and self._state.metrics_checked):
+
+            elif (
+                self._state.root_cause == "memory_leak"
+                and self._state.logs_checked
+                and self._state.metrics_checked
+            ):
                 self._state.service_status = "healthy"
                 self._state.resolved = True
                 reward = 0.4
+
             elif self._state.root_cause == "memory_leak":
                 self._state.service_status = "degraded"
                 reward = 0.1
+
             else:
                 reward = -0.2
+
         elif action.action_type == IncidentActionType.scale_service:
-            self._state.scale_level += 1
-            # scaling helps traffic spikes
-            if self._state.root_cause == "traffic_spike":
 
-                if self._state.scale_level >= 2:
-                    self._state.service_status = "healthy"
-                    self._state.resolved = True
-                    reward = 0.5
-                else:
-                    reward = 0.2
-
-            # scaling helps memory pressure temporarily
-            elif self._state.root_cause == "memory_leak":
+            if self._state.root_cause == "database_unavailable":
                 self._state.service_status = "degraded"
                 reward = 0.2
-
-            # scaling useless for crash
             else:
                 reward = -0.1
-            
-            reward -= 0.05 * (self._state.scale_level - 1)
-            
+
+        elif action.action_type == IncidentActionType.rollback_deployment:
+
+            if self._state.root_cause == "deployment_bug":
+                self._state.service_status = "healthy"
+                self._state.resolved = True
+                reward = 0.6
+            else:
+                reward = -0.1
+
         elif action.action_type == IncidentActionType.resolve_incident:
+
             if self._state.resolved:
                 reward = grade_incident(self._state)
                 done = True
             else:
                 reward = -0.5
-        else:
-            reward = -0.1
-            
-        logs_output = (self._scenario.logs if self._state.logs_checked else "Logs not inspected yet")
-        
-        if self._state.metrics_checked:
-            cpu = self._scenario.metrics["cpu"] / self._state.scale_level
-            memory = self._scenario.metrics["memory"]
-            error_rate = self._scenario.metrics["error_rate"]
 
-            metrics_output = {
-                "cpu": cpu,
-                "memory": memory,
-                "error_rate": error_rate,
-                "scale_level": self._state.scale_level
-            }
-
-        else:
-            metrics_output = {
-                "cpu": -1.0,
-                "memory": -1.0,
-                "error_rate": -1.0,
-                "scale_level": self._state.scale_level
-            }
-        
         observation = IncidentResponseObservation(
-            alert=("Incident Resolved" if self._state.resolved else self._scenario.alert),
-            metrics=metrics_output,
-            logs=logs_output,
+            alert="API Service incident",
+            metrics={
+                "cpu": 10.0,
+                "memory": 20.0,
+                "error_rate": 0.0 if self._state.resolved else 1.0
+            },
+            logs="Logs inspected" if self._state.logs_checked else "No logs checked yet",
             status=self._state.service_status,
             reward=reward,
             done=done,
         )
-        
+
         return observation
-
-        # return IncidentResponseObservation(
-        #     echoed_message=message,
-        #     message_length=length,
-        #     done=False,
-        #     reward=reward,
-        #     metadata={"original_message": message, "step": self._state.step_count},
-        # )
-
+    
     @property
     def state(self) -> State:
         """
@@ -224,9 +178,9 @@ class IncidentResponseEnvironment(Environment):
         """
         return self._state
 
-    # @classmethod
-    # async def from_docker_image(cls, image_name: str):
-    #     from openenv.core.docker_env_runner import run_env_from_docker_image
-        
-    #     env = await run_env_from_docker_image(image_name)
-    #     return env
+        # @classmethod
+        # async def from_docker_image(cls, image_name: str):
+        #     from openenv.core.docker_env_runner import run_env_from_docker_image
+            
+        #     env = await run_env_from_docker_image(image_name)
+        #     return env
