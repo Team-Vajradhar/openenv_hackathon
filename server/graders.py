@@ -1,4 +1,4 @@
-from incident_response_env.models import IncidentResponseState
+from models import IncidentResponseState
 
 
 def grade_incident(state: IncidentResponseState) -> float:

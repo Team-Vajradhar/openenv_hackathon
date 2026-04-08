@@ -49,8 +49,8 @@ from typing import List, Optional
 
 from openai import OpenAI
 
-from incident_response_env.models import IncidentResponseAction
-from incident_response_env.server.incident_response_env_environment import IncidentResponseEnvironment
+from models import IncidentResponseAction
+from server.incident_response_env_environment import IncidentResponseEnvironment
 from dotenv import load_dotenv
 import logging
 
@@ -125,6 +125,7 @@ def build_user_prompt(alert: str, logs: str, metrics: dict, status: str, step: i
         - inspect_metrics
         - restart_service
         - resolve_incident
+        - scale_service
         
         Choose the best next action.
         Reply with ONLY the action name.
@@ -190,11 +191,7 @@ def parse_action(text: str) -> IncidentResponseAction:
 async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
-    if IMAGE_NAME:
-        env = await IncidentResponseEnvironment.from_docker_image(IMAGE_NAME)
-    else:
-        env = IncidentResponseEnvironment()
-
+    env = IncidentResponseEnvironment()
     
     rewards: List[float] = []
     steps_taken = 0
@@ -204,17 +201,17 @@ async def main() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        result = await env.reset(task_name=TASK_NAME)
+        result = env.reset(task_name=TASK_NAME)
 
         for step in range(1, MAX_STEPS + 1):
             if result.done:
                 break
             
-            obs = result.observation
+            obs = result
             prompt = build_user_prompt(obs.alert,obs.logs,obs.metrics,obs.status,step)
             action_text = get_model_action(client, prompt)
             action = parse_action(action_text)
-            result = await env.step(action)
+            result = env.step(action)
 
             reward = result.reward or 0.0
             done = result.done

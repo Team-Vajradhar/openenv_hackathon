@@ -16,11 +16,12 @@ from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
+from openenv.core.env_client import EnvClient
 
-from incident_response_env.models import IncidentActionType, IncidentResponseState
-from incident_response_env.server.graders import grade_incident
-from incident_response_env.server.incidents import INCIDENT_SCENARIOS, IncidentScenario
-from incident_response_env.server.tasks import TASKS
+from models import IncidentActionType, IncidentResponseState
+from server.graders import grade_incident
+from server.incidents import INCIDENT_SCENARIOS, IncidentScenario
+from server.tasks import TASKS
 
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
@@ -222,3 +223,10 @@ class IncidentResponseEnvironment(Environment):
             Current State with episode_id and step_count
         """
         return self._state
+
+    # @classmethod
+    # async def from_docker_image(cls, image_name: str):
+    #     from openenv.core.docker_env_runner import run_env_from_docker_image
+        
+    #     env = await run_env_from_docker_image(image_name)
+    #     return env
