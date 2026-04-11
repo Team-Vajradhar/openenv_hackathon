@@ -42,14 +42,14 @@ class IncidentResponseObservation(Observation):
     metrics: Dict[str, float] = Field(description="System metrics like CPU, memory, error rate")
     logs: str = Field(description="Relevant log snippet")
     status: str = Field(description="Current service status: healthy, degraded, down")
-    reward: Optional[float] = Field(default=0.01, description="Reward assigned for the previous action")
+    reward: float = Field(description="Reward assigned for the previous action")
     done: bool = Field(description="Whether the episode has finished")
     
 
 class IncidentResponseState(State):
     """Internal State of Environment, not visible to the agent"""
 
-    episode_id: str = Field(...,description="Stores the unique Id of the current episode")
+    # episode_id: str = Field(...,description="Stores the unique Id of the current episode")
     incident_type: str = Field(description="Type of incident, e.g., 'DDoS', 'Data Breach', 'Service Outage' occuring in the system")
     root_cause: str = Field(description="Underlying cause of the incident, e.g., 'Misconfiguration', 'Vulnerability Exploitation', 'Hardware Failure'")
     service_status: str = Field(default="degraded",description="Current status of the affected service, e.g., 'healthy', 'degraded', 'down'")
@@ -57,5 +57,5 @@ class IncidentResponseState(State):
     logs_checked: bool = Field(default=False, description="Whether logs have been inspected")
     metrics_checked: bool = Field(default=False, description="Whether metrics have been checked")
     scale_level: int = Field(default=1, description="Number of service replicas")
-    step_count: int = Field(default=0, description="Number of actions taken in the episode")
+    # step_count: int = Field(default=0, description="Number of actions taken in the episode")
     
