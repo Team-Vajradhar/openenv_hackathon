@@ -21,6 +21,7 @@ from models import IncidentActionType, IncidentResponseState
 from server.graders import grade_incident
 from server.incidents import INCIDENT_SCENARIOS, IncidentScenario
 
+
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
 except ImportError:
@@ -58,8 +59,7 @@ class IncidentResponseEnvironment(Environment):
         self._scenario: IncidentScenario | None = None
         self._task = None
 
-    def reset(self) -> IncidentResponseObservation:
-
+    def reset(self, **kwargs) -> IncidentResponseObservation:
         """Reset the environment and start a new incident."""
 
         scenario = self._select_scenario()
