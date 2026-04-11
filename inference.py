@@ -201,7 +201,7 @@ async def main() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        result = env.reset(task_name=TASK_NAME)
+        result = env.reset()
 
         for step in range(1, MAX_STEPS + 1):
             if result.done:
