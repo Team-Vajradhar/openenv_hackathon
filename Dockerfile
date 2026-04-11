@@ -17,7 +17,7 @@ WORKDIR /app
 
 # Ensure git is available (required for installing dependencies from VCS)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc && \
+    apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
 
 # Build argument to control whether we're building standalone or in-repo
@@ -26,9 +26,6 @@ ARG ENV_NAME=incident_response_env
 
 # Copy environment code (always at root of build context)
 COPY . /app/env
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
 # For in-repo builds, openenv is already vendored in the build context
 # For standalone builds, openenv will be installed via pyproject.toml
@@ -82,4 +79,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the FastAPI server
 # The module path is constructed to work with the /app/env structure
-CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "cd /app/env && uvicorn server.app:app --host 0.0.0.0 --port 8000"]
