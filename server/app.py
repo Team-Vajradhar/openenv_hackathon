@@ -36,8 +36,8 @@ except Exception as e:  # pragma: no cover
     ) from e
 
 
-from incident_response_env.models import IncidentResponseAction, IncidentResponseObservation
-from incident_response_env.server.incident_response_env_environment import IncidentResponseEnvironment
+from models import IncidentResponseAction, IncidentResponseObservation
+from server.incident_response_env_environment import IncidentResponseEnvironment
 # try:
 #     from ..models import IncidentResponseAction, IncidentResponseObservation
 #     from .incident_response_env_environment import IncidentResponseEnvironment

@@ -16,12 +16,11 @@ from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
-from openenv.core.env_client import EnvClient
 
 from models import IncidentActionType, IncidentResponseState
 from server.graders import grade_incident
 from server.incidents import INCIDENT_SCENARIOS, IncidentScenario
-from server.tasks import TASKS
+
 
 try:
     from ..models import IncidentResponseAction, IncidentResponseObservation
@@ -60,7 +59,7 @@ class IncidentResponseEnvironment(Environment):
         self._scenario: IncidentScenario | None = None
         self._task = None
 
-    def reset(self) -> IncidentResponseObservation:
+    def reset(self, **kwargs) -> IncidentResponseObservation:
         """Reset the environment and start a new incident."""
 
         scenario = self._select_scenario()
@@ -81,7 +80,6 @@ class IncidentResponseEnvironment(Environment):
             metrics=scenario.metrics,
             logs=scenario.logs,
             status=self._state.service_status,
-            reward=0.0,
             done=False,
         )
 
@@ -162,7 +160,7 @@ class IncidentResponseEnvironment(Environment):
             },
             logs="Logs inspected" if self._state.logs_checked else "No logs checked yet",
             status=self._state.service_status,
-            reward=reward,
+            reward=max(0.01, min(reward, 0.99)),
             done=done,
         )
 
